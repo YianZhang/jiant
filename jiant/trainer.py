@@ -746,7 +746,7 @@ class SamplingMultiTaskTrainer:
             )
             #issue 2: what is batch_size? How is that involved in the loss?
             n_test_batches = math.ceil(max_data_points / batch_size)
-            print('testing: max_data_points, batch_size, n_test_batches', max_data_points, batch_size, n_test_batches)
+            log.info('testing: max_data_points: %d, batch_size: %d, n_test_batches: %d', max_data_points, batch_size, n_test_batches)
             #all_val_metrics["%s_loss" % task.name] = 0.0
             total_loss, n_examples, batch_num = 0.0, 0, 0
             for batch in test_generator:
@@ -770,7 +770,7 @@ class SamplingMultiTaskTrainer:
             log.info('Online Code loss computed: %d', total_loss)
             output_total_loss = {"online_code_loss": total_loss, 'n_examples': n_examples}
             output_file = os.path.join(os.path.split(self._serialization_dir)[0],"results.tsv")
-            print("testing, output file path:", output_file)
+            log.info("testing, output file path:", output_file)
             write_results(output_total_loss, output_file, "online_code_partial_result")
 
 
