@@ -748,7 +748,7 @@ class SamplingMultiTaskTrainer:
             n_test_batches = math.ceil(max_data_points / batch_size)
             print('testing: max_data_points, batch_size, n_test_batches', max_data_points, batch_size, n_test_batches)
             #all_val_metrics["%s_loss" % task.name] = 0.0
-            total_loss, n_examples = 0.0, 0
+            total_loss, n_examples, batch_num = 0.0, 0, 0
             for batch in test_generator:
                 batch_num += 1
                 with torch.no_grad():
@@ -766,6 +766,7 @@ class SamplingMultiTaskTrainer:
                     n_examples += n_exs
                 else:
                     raise ValueError("n_exs is type " + type(n_exs) + ", int or Tensor is expected.")
+            log.info('testing, batch_num: %d', batch_num)
             log.info('Online Code loss computed: %d', total_loss)
             output_total_loss = {"online_code_loss": total_loss, 'n_examples': n_examples}
             output_file = os.path.join(os.path.split(self._serialization_dir)[0],"results.tsv")
