@@ -737,6 +737,10 @@ class SamplingMultiTaskTrainer:
         log.info("Stopped training after %d validation checks", n_step / self._val_interval)
 
         # write online code loss to file
+        # online code arg type check
+        print("testing: online code arg type check")
+        print(type(self.online_code_preshuffle_seed), self.online_code_preshuffle_seed)
+        print(type(self.online_code_data_split), self.online_code_data_split)
         if self.online_code_preshuffle_seed and self.online_code_data_split:
         #copied and modified: 
             max_data_points = tasks[0].example_counts["test"]
