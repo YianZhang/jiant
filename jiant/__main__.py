@@ -576,6 +576,8 @@ def main(cl_arguments):
     cuda_device = parse_cuda_list_arg(args.cuda)
     #online-code testing
     if args.get("online_code_preshuffle_seed", False) and args.get("online_code_data_split", False):
+        #if isinstance(args.online_code_data_split, str):
+        #        args.online_code_data_split = [float(percent) for percent in args.online_code_data_split.split(',')]
         log.info("testing: online code arg type check")
         log.info("%s %d", str(type(args.online_code_preshuffle_seed)), args.online_code_preshuffle_seed)
         log.info("%s %s", str(type(args.online_code_data_split)), str(args.online_code_data_split))

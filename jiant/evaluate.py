@@ -177,6 +177,7 @@ def evaluate_online_code(model, task, batch_size, cuda_device, run_dir):
     log.info('testing: max_data_points: %d, batch_size: %d, n_test_batches: %d', max_data_points, batch_size, n_test_batches)
     total_loss, n_examples, batch_num = 0.0, 0, 0
     for batch in test_generator:
+        #log.info('testing, labels shape: %s', str(batch['labels'].shape))
         batch_num += 1
         with torch.no_grad():
             if isinstance(cuda_device, int):
@@ -185,7 +186,7 @@ def evaluate_online_code(model, task, batch_size, cuda_device, run_dir):
         loss = get_output_attribute(out, "loss", cuda_device, "mean")
         n_exs = get_output_attribute(out, "n_exs", cuda_device)
         log.info('mean_loss: %s, n_exs: %d', str(out['loss']), n_exs)
-        total_loss += loss*n_exs
+        total_loss += loss*n_exs*batch['labels'].shape[-1]
         # in multi-GPU mode n_exs is expected to be a tensor, w/ single-GPU an int is expected:
         if isinstance(n_exs, torch.Tensor):
             n_examples += n_exs.item()

@@ -156,14 +156,16 @@ class EdgeProbingTask(Task):
         self.all_labels = list(utils.load_lines(self.label_file))
         self.n_classes = len(self.all_labels)
         iters_by_split = collections.OrderedDict()
-        if args.get("online_code_preshuffle_seed", False) and args.get("online_code_data_split", False):
+        if args!=None and args.get("online_code_preshuffle_seed", False) and args.get("online_code_data_split", False):
+            online_code_data_split = [float(percent) for percent in args.online_code_data_split.split(',')]
             assert 'train' in self._files_by_split and 'val' in self._files_by_split
             full_train = list(self._stream_records(self._files_by_split['train']))
             random.Random(args.online_code_preshuffle_seed).shuffle(full_train)
             log.info('testing, len(full_train): %d', len(full_train))
             iters_by_split['val'] = list(self._stream_records(self._files_by_split['val']))
-            iters_by_split['train'] = full_train[int(math.ceil(args.online_code_data_split[0]*len(full_train))):int(math.ceil(args.online_code_data_split[1]*len(full_train)))]
-            iters_by_split['test'] = full_train[int(math.ceil(args.online_code_data_split[1]*len(full_train))):int(math.ceil(args.online_code_data_split[2]*len(full_train)))]
+            iters_by_split['train'] = full_train[int(math.ceil(online_code_data_split[0]*len(full_train))):int(math.ceil(online_code_data_split[1]*len(full_train)))]
+            iters_by_split['test'] = full_train[int(math.ceil(online_code_data_split[1]*len(full_train))):int(math.ceil(online_code_data_split[2]*len(full_train)))]
+            #iters_by_split['test'] = list(self._stream_records(self._files_by_split['test']))
         else:
             for split, filename in self._files_by_split.items():
                 #  # Lazy-load using RepeatableIterator.
