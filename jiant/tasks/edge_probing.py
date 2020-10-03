@@ -160,7 +160,7 @@ class EdgeProbingTask(Task):
             assert 'train' in self._files_by_split and 'val' in self._files_by_split
             full_train = list(self._stream_records(self._files_by_split['train']))
             random.Random(args.online_code_preshuffle_seed).shuffle(full_train)
-            print('testing, len(full_train):', len(full_train))
+            log.info('testing, len(full_train): %d', len(full_train))
             iters_by_split['val'] = list(self._stream_records(self._files_by_split['val']))
             iters_by_split['train'] = full_train[int(math.ceil(args.online_code_data_split[0]*len(full_train))):int(math.ceil(args.online_code_data_split[1]*len(full_train)))]
             iters_by_split['test'] = full_train[int(math.ceil(args.online_code_data_split[1]*len(full_train))):int(math.ceil(args.online_code_data_split[2]*len(full_train)))]

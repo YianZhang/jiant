@@ -499,11 +499,11 @@ def _get_task(name: str, args: config.Params, data_path: str, scratch_path: str)
             tokenizer_name=args.tokenizer,
             **task_kw,
         )
-        print('testing',args)
+        log.info('testing: %s',str(args))
         # if the user requires to calculate the online code of an edge probing task
         if args.get("online_code_preshuffle_seed", False) and args.get("online_code_data_split", False):
             task.load_data(args)
-            print('testing','flags detected; preprocess.py')
+            log.info('testing, flags detected; preprocess.py')
         else:
             task.load_data()
         utils.maybe_make_dir(os.path.dirname(pkl_path))
