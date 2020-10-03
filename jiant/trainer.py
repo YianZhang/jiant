@@ -24,7 +24,6 @@ from torch.nn.utils.clip_grad import clip_grad_norm_
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from jiant.evaluate import evaluate
-from jiant.evaluate import write_results
 from jiant.tasks.seq2seq import Seq2SeqTask
 from jiant.utils import config
 from jiant.utils.utils import (
@@ -92,8 +91,6 @@ def build_trainer_params(args, cuda_device, task_names, phase="pretrain"):
         else args.pretrain_data_fraction,
     )
     params["cuda"] = cuda_device
-    params["online_code_preshuffle_seed"] = args.get("online_code_preshuffle_seed", default=False)
-    params["online_code_data_split"] = args.get("online_code_data_split", default=False)
     return Params(params)
 
 
@@ -160,8 +157,6 @@ def build_trainer(
             "dec_val_scale": params["dec_val_scale"],
             "training_data_fraction": params["training_data_fraction"],
             "accumulation_steps": params["accumulation_steps"],
-            "online_code_preshuffle_seed": params["online_code_preshuffle_seed"],
-            "online_code_data_split": params["online_code_data_split"],
         }
     )
     assert (
@@ -192,8 +187,6 @@ class SamplingMultiTaskTrainer:
         dec_val_scale=100,
         training_data_fraction=1.0,
         accumulation_steps=1,
-        online_code_preshuffle_seed=False,
-        online_code_data_split=False,
     ):
         """
         The training coordinator. Unusually complicated to handle MTL with tasks of
@@ -254,8 +247,6 @@ class SamplingMultiTaskTrainer:
         self._scheduler = None
         self._optimizer = None
         self._accumulation_steps = accumulation_steps
-        self.online_code_preshuffle_seed=online_code_preshuffle_seed
-        self.online_code_data_split=online_code_data_split
 
         self._log_interval = 10  # seconds
 
@@ -735,45 +726,6 @@ class SamplingMultiTaskTrainer:
                     )
 
         log.info("Stopped training after %d validation checks", n_step / self._val_interval)
-
-        # write online code loss to file
-        if self.online_code_preshuffle_seed and self.online_code_data_split:
-        #copied and modified: 
-            max_data_points = tasks[0].example_counts["test"]
-            test_generator = BasicIterator(batch_size, instances_per_epoch=max_data_points)(
-            #issue 1: is get_instance_iterable correct? - should be fine!
-                task.get_instance_iterable(split_name="test"), num_epochs=1, shuffle=False
-            )
-            #issue 2: what is batch_size? How is that involved in the loss?
-            n_test_batches = math.ceil(max_data_points / batch_size)
-            log.info('testing: max_data_points: %d, batch_size: %d, n_test_batches: %d', max_data_points, batch_size, n_test_batches)
-            #all_val_metrics["%s_loss" % task.name] = 0.0
-            total_loss, n_examples, batch_num = 0.0, 0, 0
-            for batch in test_generator:
-                batch_num += 1
-                with torch.no_grad():
-                    out = self._forward(batch, task=task)
-
-                loss = get_output_attribute(out, "loss", self._cuda_device, "sum")
-
-                total_loss += loss
-
-                n_exs = get_output_attribute(out, "n_exs", self._cuda_device)
-                # in multi-GPU mode n_exs is expected to be a tensor, w/ single-GPU an int is expected:
-                if isinstance(n_exs, torch.Tensor):
-                    n_examples += n_exs.item()
-                elif isinstance(n_exs, int):
-                    n_examples += n_exs
-                else:
-                    raise ValueError("n_exs is type " + type(n_exs) + ", int or Tensor is expected.")
-            log.info('testing, batch_num: %d', batch_num)
-            log.info('Online Code loss computed: %d', total_loss)
-            output_total_loss = {"online_code_loss": total_loss, 'n_examples': n_examples}
-            output_file = os.path.join(os.path.split(self._serialization_dir)[0],"results.tsv")
-            log.info("testing, output file path:", output_file)
-            write_results(output_total_loss, output_file, "online_code_partial_result")
-
-
         return self._aggregate_results(tasks, task_infos, metric_infos)  # , validation_interval)
 
     def _aggregate_results(self, tasks, task_infos, metric_infos):
@@ -1345,9 +1297,6 @@ class SamplingMultiTaskTrainer:
         dec_val_scale = params.pop("dec_val_scale", 100)
         training_data_fraction = params.pop("training_data_fraction", 1.0)
         accumulation_steps = params.pop("accumulation_steps", 1.0)
-        online_code_preshuffle_seed = params.pop("online_code_preshuffle_seed", False)
-        online_code_data_split = params.pop("online_code_data_split", False)
-        
 
         params.assert_empty(cls.__name__)
         return SamplingMultiTaskTrainer(
@@ -1367,6 +1316,4 @@ class SamplingMultiTaskTrainer:
             dec_val_scale=dec_val_scale,
             training_data_fraction=training_data_fraction,
             accumulation_steps=accumulation_steps,
-            online_code_preshuffle_seed=online_code_preshuffle_seed,
-            online_code_data_split=online_code_data_split,
         )
